@@ -340,6 +340,54 @@ export function registerCommands(
         })
     );
 
+    // Resolve: Accept Theirs
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.resolveTheirs', async (resource?: vscode.SourceControlResourceState) => {
+            const repo = extension.getActiveRepository();
+            if (!repo || !resource) {
+                return;
+            }
+            const success = await repo.resolve(resource.resourceUri.fsPath, 'theirs-full');
+            if (success) {
+                await extension.refreshAll();
+            } else {
+                vscode.window.showErrorMessage('Failed to resolve conflict.');
+            }
+        })
+    );
+
+    // Resolve: Accept Mine
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.resolveMine', async (resource?: vscode.SourceControlResourceState) => {
+            const repo = extension.getActiveRepository();
+            if (!repo || !resource) {
+                return;
+            }
+            const success = await repo.resolve(resource.resourceUri.fsPath, 'mine-full');
+            if (success) {
+                await extension.refreshAll();
+            } else {
+                vscode.window.showErrorMessage('Failed to resolve conflict.');
+            }
+        })
+    );
+
+    // Resolve: Mark as Resolved (use working copy as-is)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.resolveWorking', async (resource?: vscode.SourceControlResourceState) => {
+            const repo = extension.getActiveRepository();
+            if (!repo || !resource) {
+                return;
+            }
+            const success = await repo.resolve(resource.resourceUri.fsPath, 'working');
+            if (success) {
+                await extension.refreshAll();
+            } else {
+                vscode.window.showErrorMessage('Failed to resolve conflict.');
+            }
+        })
+    );
+
     // Refresh Log
     context.subscriptions.push(
         vscode.commands.registerCommand('simplySvn.refreshLog', async () => {

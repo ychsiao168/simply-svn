@@ -150,6 +150,14 @@ export class SvnRepository implements vscode.Disposable {
         }
     }
 
+    /**
+     * Resolve a conflicted file.
+     */
+    async resolve(filePath: string, accept: 'working' | 'mine-full' | 'theirs-full'): Promise<boolean> {
+        const result = await this.svn.resolve(filePath, accept, this.root);
+        return result.exitCode === 0;
+    }
+
     async getLog(filePath?: string, limit?: number): Promise<LogEntry[]> {
         const result = await this.svn.log(this.root, filePath, limit);
         if (result.exitCode !== 0) {

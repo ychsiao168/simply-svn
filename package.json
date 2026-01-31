@@ -89,6 +89,24 @@
         "icon": "$(add)"
       },
       {
+        "command": "simplySvn.resolveTheirs",
+        "title": "Accept Theirs",
+        "category": "SVN",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "simplySvn.resolveMine",
+        "title": "Accept Mine",
+        "category": "SVN",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "simplySvn.resolveWorking",
+        "title": "Mark Resolved",
+        "category": "SVN",
+        "icon": "$(check)"
+      },
+      {
         "command": "simplySvn.refreshLog",
         "title": "Refresh Log",
         "category": "SVN",
@@ -145,6 +163,21 @@
           "command": "simplySvn.delete",
           "group": "1_modification",
           "when": "scmProvider == svn && scmResourceGroup == changes"
+        },
+        {
+          "command": "simplySvn.resolveTheirs",
+          "group": "1_modification",
+          "when": "scmProvider == svn && scmResourceGroup == conflicts"
+        },
+        {
+          "command": "simplySvn.resolveMine",
+          "group": "1_modification",
+          "when": "scmProvider == svn && scmResourceGroup == conflicts"
+        },
+        {
+          "command": "simplySvn.resolveWorking",
+          "group": "1_modification",
+          "when": "scmProvider == svn && scmResourceGroup == conflicts"
         }
       ]
     },

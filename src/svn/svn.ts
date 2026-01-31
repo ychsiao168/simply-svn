@@ -206,6 +206,13 @@ export class Svn {
     }
 
     /**
+     * Resolve a conflicted file
+     */
+    async resolve(filePath: string, accept: 'working' | 'mine-full' | 'theirs-full', cwd: string): Promise<SvnExecResult> {
+        return this.exec(['resolve', '--accept', accept, filePath], cwd);
+    }
+
+    /**
      * Log
      */
     async log(cwd: string, filePath?: string, limit: number = 50): Promise<SvnExecResult> {
