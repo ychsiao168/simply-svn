@@ -31,10 +31,15 @@ export function registerCommands(
             }
 
             const success = await repo.commit(message);
-            if (success && sourceControl) {
-                sourceControl.inputBox.value = '';
-                await extension.refreshAll();
+            if (success) {
+                if (sourceControl) {
+                    sourceControl.inputBox.value = '';
+                }
+                vscode.window.showInformationMessage('Committed successfully.');
+            } else {
+                vscode.window.showErrorMessage('Commit failed. Check the Simply SVN output for details.');
             }
+            await extension.refreshAll();
         })
     );
 
@@ -124,7 +129,10 @@ export function registerCommands(
             );
 
             if (confirm === 'Delete') {
-                await repo.delete(paths);
+                const success = await repo.delete(paths);
+                if (!success) {
+                    vscode.window.showErrorMessage('Failed to delete. Files may have local modifications — commit or revert them first.');
+                }
                 await extension.refreshAll();
             }
         })

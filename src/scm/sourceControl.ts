@@ -27,6 +27,7 @@ export class SvnSourceControl implements vscode.Disposable {
             command: 'simplySvn.commit',
             title: 'Commit',
         };
+        this.sourceControl.inputBox.placeholder = 'Commit message (press ✓ to commit)';
         this.sourceControl.quickDiffProvider = this;
 
         // 建立資源群組
