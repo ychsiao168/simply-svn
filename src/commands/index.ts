@@ -21,7 +21,7 @@ export function registerCommands(
                 return;
             }
 
-            // 取得 Source Control 的輸入訊息
+            // Get the commit message from Source Control input box
             const sourceControl = extension.getSourceControl(repo.root);
             const message = sourceControl?.inputBox.value;
 
@@ -92,7 +92,7 @@ export function registerCommands(
                 return;
             }
 
-            // 確認對話框
+            // Confirmation dialog
             const confirm = await vscode.window.showWarningMessage(
                 `Revert ${paths.length} file(s)? This will discard all local changes.`,
                 { modal: true },
@@ -430,10 +430,10 @@ function formatLocalDate(dateStr: string): string {
 }
 
 /**
- * 取得目前選取的資源（用於多選操作）
+ * Get currently selected resources (for multi-select operations)
  */
 async function getSelectedResources(): Promise<string[]> {
-    // 這是簡化版，實際上可能需要追蹤 SCM 選取狀態
+    // Simplified version — may need to track SCM selection state for full multi-select
     const editor = vscode.window.activeTextEditor;
     if (editor) {
         return [editor.document.uri.fsPath];

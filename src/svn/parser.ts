@@ -1,7 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 
 /**
- * SVN Status 項目
+ * SVN Status Entry
  */
 export interface StatusEntry {
     path: string;
@@ -45,7 +45,7 @@ const parser = new XMLParser({
 });
 
 /**
- * 解析 svn status --xml 輸出
+ * Parse svn status --xml output
  */
 export class SvnStatusParser {
     static parse(xml: string): StatusEntry[] {
@@ -63,7 +63,7 @@ export class SvnStatusParser {
                 return entries;
             }
 
-            // 處理單個或多個 entry
+            // Handle single or multiple entries
             let entryList = target.entry;
             if (!entryList) {
                 return entries;
@@ -94,8 +94,6 @@ export class SvnStatusParser {
 }
 
 /**
- * 解析 svn info --xml 輸出
- */
 /**
  * SVN Log Entry
  */

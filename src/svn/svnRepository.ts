@@ -17,7 +17,7 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * 取得 repository 資訊
+     * Get repository info
      */
     async getInfo(): Promise<SvnInfo | undefined> {
         this._info = await this.svn.info(this.root);
@@ -25,14 +25,14 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * 取得狀態
+     * Get working copy status
      */
     async getStatus(): Promise<StatusEntry[]> {
         return this.svn.status(this.root);
     }
 
     /**
-     * Add 檔案
+     * Add files
      */
     async add(paths: string[]): Promise<boolean> {
         const result = await this.svn.add(paths, this.root);
@@ -40,7 +40,7 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * Revert 檔案
+     * Revert files
      */
     async revert(paths: string[]): Promise<boolean> {
         const result = await this.svn.revert(paths, this.root);
@@ -48,7 +48,7 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * Delete 檔案
+     * Delete files
      */
     async delete(paths: string[]): Promise<boolean> {
         const result = await this.svn.delete(paths, this.root);
@@ -84,7 +84,7 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * 取得 BASE 版本的檔案內容（用於 diff）
+     * Get BASE revision file content (for diff)
      */
     async getBaseContent(relativePath: string): Promise<string | undefined> {
         return this.svn.cat(relativePath, 'BASE', this.root);
@@ -95,7 +95,7 @@ export class SvnRepository implements vscode.Disposable {
     }
 
     /**
-     * 取得 diff
+     * Get diff
      */
     async diff(path: string): Promise<string> {
         return this.svn.diff(path, this.root);

@@ -17,7 +17,7 @@ export class SvnSourceControl implements vscode.Disposable {
         private readonly repository: SvnRepository,
         private readonly outputChannel: vscode.OutputChannel
     ) {
-        // 建立 Source Control
+        // Create Source Control
         this.sourceControl = vscode.scm.createSourceControl(
             'svn',
             'SVN',
@@ -30,23 +30,23 @@ export class SvnSourceControl implements vscode.Disposable {
         this.sourceControl.inputBox.placeholder = 'Commit message (press ✓ to commit)';
         this.sourceControl.quickDiffProvider = this;
 
-        // 建立資源群組
+        // Create resource groups
         this.changesGroup = this.sourceControl.createResourceGroup('changes', 'Changes');
         this.unversionedGroup = this.sourceControl.createResourceGroup('unversioned', 'Unversioned');
         this.conflictsGroup = this.sourceControl.createResourceGroup('conflicts', 'Conflicts');
 
-        // 設定群組行為
+        // Configure group behavior
         this.changesGroup.hideWhenEmpty = true;
         this.unversionedGroup.hideWhenEmpty = true;
         this.conflictsGroup.hideWhenEmpty = true;
 
-        // Content Provider（用於 Quick Diff）
+        // Content Provider for Quick Diff
         this.contentProvider = new SvnContentProvider(repository);
         this.disposables.push(
             vscode.workspace.registerTextDocumentContentProvider('svn', this.contentProvider)
         );
 
-        // 監聽檔案變化
+        // Watch for file changes
         this.setupFileWatcher();
 
         this.disposables.push(this.sourceControl);
@@ -78,18 +78,18 @@ export class SvnSourceControl implements vscode.Disposable {
     }
 
     /**
-     * QuickDiffProvider 實作
+     * QuickDiffProvider implementation
      */
     provideOriginalResource(uri: vscode.Uri): vscode.Uri | undefined {
         if (uri.scheme !== 'file') {
             return undefined;
         }
-        // 返回 svn: scheme URI，讓 contentProvider 處理
+        // Return svn: scheme URI for contentProvider to handle
         return uri.with({ scheme: 'svn', query: 'BASE' });
     }
 
     /**
-     * 刷新狀態
+     * Refresh status
      */
     async refresh(): Promise<void> {
         try {

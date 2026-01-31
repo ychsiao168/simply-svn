@@ -20,28 +20,14 @@ export class SvnExtension implements vscode.Disposable {
     ) {}
 
     async initialize(): Promise<void> {
-        // 檢查設定
+        // Check settings
         const config = vscode.workspace.getConfiguration('simplySvn');
         if (!config.get<boolean>('enabled', true)) {
             this.outputChannel.appendLine('Simply SVN is disabled in settings');
             return;
         }
 
-        // 初始化 SVN CLI wrapper
-        const svnPath = config.get<string>('path', 'svn');
-        this.svn = new Svn(svnPath, this.outputChannel);
-
-        // 檢查 SVN 是否可用
-        const version = await this.svn.getVersion();
-        if (!version) {
-            throw new Error(
-                'SVN not found. Please install SVN and ensure it is in your PATH, ' +
-                'or set the path in settings (simplySvn.path)'
-            );
-        }
-        this.outputChannel.appendLine(`Found SVN version: ${version}`);
-
-        // 註冊命令
+        // Register commands once (they delegate to getActiveRepository which handles no-svn gracefully)
         registerCommands(this.context, this);
 
         // Register SVN Log TreeView
@@ -62,13 +48,51 @@ export class SvnExtension implements vscode.Disposable {
         const blameStatusBar = new SvnBlameStatusBar(this);
         this.disposables.push(this.statusBar, blameStatusBar);
 
-        // 掃描 workspace 中的 SVN repositories
-        await this.scanWorkspace();
-
-        // 監聽 workspace 變化
+        // Watch for workspace folder changes
         this.disposables.push(
             vscode.workspace.onDidChangeWorkspaceFolders(() => this.scanWorkspace())
         );
+
+        // Re-initialize SVN when settings change
+        this.disposables.push(
+            vscode.workspace.onDidChangeConfiguration(e => {
+                if (e.affectsConfiguration('simplySvn.path') || e.affectsConfiguration('simplySvn.enabled')) {
+                    this.initializeSvn();
+                }
+            })
+        );
+
+        // Initial SVN setup
+        await this.initializeSvn();
+    }
+
+    private async initializeSvn(): Promise<void> {
+        const config = vscode.workspace.getConfiguration('simplySvn');
+        if (!config.get<boolean>('enabled', true)) {
+            this.svn = undefined;
+            return;
+        }
+
+        const svnPath = config.get<string>('path', 'svn');
+        this.svn = new Svn(svnPath, this.outputChannel);
+
+        const version = await this.svn.getVersion();
+        if (!version) {
+            this.svn = undefined;
+            this.outputChannel.appendLine('SVN not found');
+            const action = await vscode.window.showWarningMessage(
+                'SVN not found. Please install SVN and ensure it is in your PATH, ' +
+                'or configure the path in settings (simplySvn.path).',
+                'Open Settings'
+            );
+            if (action === 'Open Settings') {
+                vscode.commands.executeCommand('workbench.action.openSettings', 'simplySvn.path');
+            }
+            return;
+        }
+        this.outputChannel.appendLine(`Found SVN version: ${version}`);
+
+        await this.scanWorkspace();
     }
 
     private async scanWorkspace(): Promise<void> {
@@ -103,7 +127,7 @@ export class SvnExtension implements vscode.Disposable {
 
         this.disposables.push(repository, sourceControl);
 
-        // 初始刷新
+        // Initial refresh
         await sourceControl.refresh();
         await this.statusBar?.update();
     }

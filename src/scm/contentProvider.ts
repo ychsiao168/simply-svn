@@ -3,7 +3,7 @@ import * as path from 'path';
 import { SvnRepository } from '../svn/svnRepository';
 
 /**
- * 提供 SVN 檔案內容（用於 Quick Diff）
+ * Provides SVN file content for Quick Diff
  */
 export class SvnContentProvider implements vscode.TextDocumentContentProvider {
     private onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
@@ -12,10 +12,10 @@ export class SvnContentProvider implements vscode.TextDocumentContentProvider {
     constructor(private readonly repository: SvnRepository) {}
 
     async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
-        // uri.query 包含版本資訊，例如 "BASE"
+        // uri.query contains the revision, e.g. "BASE"
         const revision = uri.query || 'BASE';
         
-        // 取得相對路徑
+        // Get relative path
         const relativePath = path.relative(
             this.repository.root,
             uri.fsPath
@@ -31,7 +31,7 @@ export class SvnContentProvider implements vscode.TextDocumentContentProvider {
     }
 
     /**
-     * 通知 VS Code 內容已變更
+     * Notify VS Code that content has changed
      */
     fireChange(uri: vscode.Uri): void {
         this.onDidChangeEmitter.fire(uri);

@@ -15,7 +15,7 @@ export class Svn {
     ) {}
 
     /**
-     * 執行 SVN 命令
+     * Execute an SVN command
      */
     async exec(args: string[], cwd?: string): Promise<SvnExecResult> {
         return new Promise((resolve) => {
@@ -65,7 +65,7 @@ export class Svn {
     }
 
     /**
-     * 取得 SVN 版本
+     * Get SVN version
      */
     async getVersion(): Promise<string | undefined> {
         const result = await this.exec(['--version', '--quiet']);
@@ -76,7 +76,7 @@ export class Svn {
     }
 
     /**
-     * 檢查目錄是否為 SVN repository
+     * Check if a directory is an SVN repository
      */
     async isSvnRepository(path: string): Promise<boolean> {
         const result = await this.exec(['info', '--xml'], path);
@@ -84,7 +84,7 @@ export class Svn {
     }
 
     /**
-     * 取得 repository 資訊
+     * Get repository info
      */
     async info(path: string): Promise<SvnInfo | undefined> {
         const result = await this.exec(['info', '--xml'], path);
@@ -95,7 +95,7 @@ export class Svn {
     }
 
     /**
-     * 取得狀態
+     * Get working copy status
      */
     async status(path: string): Promise<StatusEntry[]> {
         const result = await this.exec(['status', '--xml'], path);
@@ -106,21 +106,21 @@ export class Svn {
     }
 
     /**
-     * Add 檔案
+     * Add files
      */
     async add(paths: string[], cwd: string): Promise<SvnExecResult> {
         return this.exec(['add', ...paths], cwd);
     }
 
     /**
-     * Revert 檔案
+     * Revert files
      */
     async revert(paths: string[], cwd: string): Promise<SvnExecResult> {
         return this.exec(['revert', ...paths], cwd);
     }
 
     /**
-     * Delete 檔案
+     * Delete files
      */
     async delete(paths: string[], cwd: string): Promise<SvnExecResult> {
         return this.exec(['delete', '--force', ...paths], cwd);
@@ -149,7 +149,7 @@ export class Svn {
     }
 
     /**
-     * 取得檔案內容（特定版本）
+     * Get file content at a specific revision
      */
     async cat(filePath: string, revision: string, cwd: string): Promise<string | undefined> {
         const result = await this.exec(['cat', '-r', revision, filePath], cwd);
