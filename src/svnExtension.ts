@@ -4,12 +4,14 @@ import { SvnRepository } from './svn/svnRepository';
 import { SvnSourceControl } from './scm/sourceControl';
 import { registerCommands } from './commands';
 import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
+import { SvnStatusBar } from './statusBar';
 
 export class SvnExtension implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
     private svn: Svn | undefined;
     private repositories: Map<string, SvnRepository> = new Map();
     private sourceControls: Map<string, SvnSourceControl> = new Map();
+    private statusBar: SvnStatusBar | undefined;
 
     constructor(
         private readonly context: vscode.ExtensionContext,
@@ -41,9 +43,6 @@ export class SvnExtension implements vscode.Disposable {
         // 註冊命令
         registerCommands(this.context, this);
 
-        // 掃描 workspace 中的 SVN repositories
-        await this.scanWorkspace();
-
         // Register SVN Log TreeView
         const logTreeProvider = new SvnLogTreeProvider(this);
         const logTreeView = vscode.window.createTreeView('simplySvn.log', {
@@ -56,6 +55,13 @@ export class SvnExtension implements vscode.Disposable {
             vscode.window.registerFileDecorationProvider(logDecorationProvider),
             logDecorationProvider
         );
+
+        // Status Bar
+        this.statusBar = new SvnStatusBar(this);
+        this.disposables.push(this.statusBar);
+
+        // 掃描 workspace 中的 SVN repositories
+        await this.scanWorkspace();
 
         // 監聽 workspace 變化
         this.disposables.push(
@@ -97,6 +103,7 @@ export class SvnExtension implements vscode.Disposable {
 
         // 初始刷新
         await sourceControl.refresh();
+        await this.statusBar?.update();
     }
 
     get svnInstance(): Svn | undefined {
@@ -140,6 +147,7 @@ export class SvnExtension implements vscode.Disposable {
         for (const sourceControl of this.sourceControls.values()) {
             await sourceControl.refresh();
         }
+        await this.statusBar?.update();
     }
 
     dispose(): void {

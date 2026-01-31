@@ -218,6 +218,39 @@ export function registerCommands(
             await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
         })
     );
+
+    // Show SVN Info
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.showInfo', async () => {
+            const repo = extension.getActiveRepository();
+            if (!repo) {
+                vscode.window.showWarningMessage('No SVN repository found');
+                return;
+            }
+
+            const info = await repo.getInfo();
+            if (!info) {
+                vscode.window.showWarningMessage('Failed to get SVN info');
+                return;
+            }
+
+            const items = [
+                `URL: ${info.url}`,
+                `Repository Root: ${info.repositoryRoot}`,
+                `Revision: ${info.revision}`,
+                info.lastChangedAuthor ? `Last Author: ${info.lastChangedAuthor}` : '',
+                info.lastChangedRev ? `Last Changed Rev: ${info.lastChangedRev}` : '',
+                info.lastChangedDate ? `Last Changed Date: ${formatLocalDate(info.lastChangedDate)}` : '',
+            ].filter(Boolean);
+
+            vscode.window.showQuickPick(items, { title: 'SVN Info', canPickMany: false });
+        })
+    );
+}
+
+function formatLocalDate(dateStr: string): string {
+    const d = new Date(dateStr);
+    return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 }
 
 /**
