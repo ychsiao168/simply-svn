@@ -87,6 +87,12 @@
         "title": "Create Branch",
         "category": "SVN",
         "icon": "$(add)"
+      },
+      {
+        "command": "simplySvn.refreshLog",
+        "title": "Refresh Log",
+        "category": "SVN",
+        "icon": "$(refresh)"
       }
     ],
     "menus": {
@@ -105,6 +111,13 @@
           "command": "simplySvn.update",
           "group": "navigation",
           "when": "scmProvider == svn"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "simplySvn.refreshLog",
+          "group": "navigation",
+          "when": "view == simplySvn.log"
         }
       ],
       "scm/resourceState/context": [

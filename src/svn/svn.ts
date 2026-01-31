@@ -209,7 +209,7 @@ export class Svn {
      * Log
      */
     async log(cwd: string, filePath?: string, limit: number = 50): Promise<SvnExecResult> {
-        const args = ['log', '--xml', '-v', '-l', limit.toString()];
+        const args = ['log', '--xml', '-v', '-r', 'HEAD:1', '-l', limit.toString()];
         if (filePath) {
             args.push(filePath);
         }

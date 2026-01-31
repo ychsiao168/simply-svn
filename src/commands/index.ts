@@ -340,6 +340,13 @@ export function registerCommands(
         })
     );
 
+    // Refresh Log
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.refreshLog', async () => {
+            await extension.refreshAll();
+        })
+    );
+
     // Show SVN Info
     context.subscriptions.push(
         vscode.commands.registerCommand('simplySvn.showInfo', async () => {

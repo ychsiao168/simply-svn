@@ -12,6 +12,7 @@ export class SvnExtension implements vscode.Disposable {
     private repositories: Map<string, SvnRepository> = new Map();
     private sourceControls: Map<string, SvnSourceControl> = new Map();
     private statusBar: SvnStatusBar | undefined;
+    private logTreeProvider: SvnLogTreeProvider | undefined;
 
     constructor(
         private readonly context: vscode.ExtensionContext,
@@ -44,14 +45,14 @@ export class SvnExtension implements vscode.Disposable {
         registerCommands(this.context, this);
 
         // Register SVN Log TreeView
-        const logTreeProvider = new SvnLogTreeProvider(this);
+        this.logTreeProvider = new SvnLogTreeProvider(this);
         const logTreeView = vscode.window.createTreeView('simplySvn.log', {
-            treeDataProvider: logTreeProvider,
+            treeDataProvider: this.logTreeProvider,
         });
         const logDecorationProvider = new SvnLogDecorationProvider();
         this.disposables.push(
             logTreeView,
-            logTreeProvider,
+            this.logTreeProvider,
             vscode.window.registerFileDecorationProvider(logDecorationProvider),
             logDecorationProvider
         );
@@ -149,6 +150,7 @@ export class SvnExtension implements vscode.Disposable {
             await sourceControl.refresh();
         }
         await this.statusBar?.update();
+        this.logTreeProvider?.refresh();
     }
 
     dispose(): void {
