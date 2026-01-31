@@ -1,0 +1,175 @@
+{
+  "name": "simply-svn",
+  "displayName": "Simply SVN",
+  "description": "SVN integration that feels like built-in Git",
+  "version": "0.1.0",
+  "publisher": "your-publisher-name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/simply-svn"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers"
+  ],
+  "keywords": [
+    "svn",
+    "subversion",
+    "scm",
+    "source control",
+    "version control"
+  ],
+  "activationEvents": [
+    "workspaceContains:**/.svn"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "simplySvn.refresh",
+        "title": "Refresh",
+        "category": "SVN",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "simplySvn.commit",
+        "title": "Commit",
+        "category": "SVN",
+        "icon": "$(check)"
+      },
+      {
+        "command": "simplySvn.update",
+        "title": "Update",
+        "category": "SVN",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "simplySvn.revert",
+        "title": "Revert",
+        "category": "SVN",
+        "icon": "$(discard)"
+      },
+      {
+        "command": "simplySvn.add",
+        "title": "Add",
+        "category": "SVN",
+        "icon": "$(add)"
+      },
+      {
+        "command": "simplySvn.delete",
+        "title": "Delete",
+        "category": "SVN",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "simplySvn.openFile",
+        "title": "Open File",
+        "category": "SVN",
+        "icon": "$(go-to-file)"
+      },
+      {
+        "command": "simplySvn.openChange",
+        "title": "Open Changes",
+        "category": "SVN",
+        "icon": "$(diff)"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "simplySvn.refresh",
+          "group": "navigation",
+          "when": "scmProvider == svn"
+        },
+        {
+          "command": "simplySvn.commit",
+          "group": "navigation",
+          "when": "scmProvider == svn"
+        },
+        {
+          "command": "simplySvn.update",
+          "group": "navigation",
+          "when": "scmProvider == svn"
+        }
+      ],
+      "scm/resourceState/context": [
+        {
+          "command": "simplySvn.openFile",
+          "group": "navigation",
+          "when": "scmProvider == svn"
+        },
+        {
+          "command": "simplySvn.openChange",
+          "group": "navigation",
+          "when": "scmProvider == svn"
+        },
+        {
+          "command": "simplySvn.add",
+          "group": "1_modification",
+          "when": "scmProvider == svn && scmResourceGroup == unversioned"
+        },
+        {
+          "command": "simplySvn.revert",
+          "group": "1_modification",
+          "when": "scmProvider == svn && scmResourceGroup == changes"
+        },
+        {
+          "command": "simplySvn.delete",
+          "group": "1_modification",
+          "when": "scmProvider == svn"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Simply SVN",
+      "properties": {
+        "simplySvn.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable SVN integration"
+        },
+        "simplySvn.path": {
+          "type": "string",
+          "default": "svn",
+          "description": "Path to the svn executable"
+        },
+        "simplySvn.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh status when files change"
+        },
+        "simplySvn.refreshInterval": {
+          "type": "number",
+          "default": 3000,
+          "description": "Auto-refresh interval in milliseconds"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "lint:fix": "eslint src --ext ts --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "fast-xml-parser": "^4.3.2"
+  }
+}
