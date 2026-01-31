@@ -132,7 +132,7 @@ export class SvnLogParser {
                 if (pathList && !Array.isArray(pathList)) {
                     pathList = [pathList];
                 }
-                const paths: LogChangedPath[] = (pathList || []).map((p: any) => ({
+                const paths: LogChangedPath[] = (pathList || []).map((p: string | Record<string, string>) => ({
                     path: typeof p === 'string' ? p : p['#text'] || '',
                     action: typeof p === 'string' ? 'M' : (p['@_action'] || 'M'),
                 }));

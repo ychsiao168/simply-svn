@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { SvnExtension } from '../svnExtension';
 
 export function registerCommands(
@@ -205,11 +206,11 @@ export function registerCommands(
             const curRev = revision.toString();
 
             const leftUri = vscode.Uri.file(
-                require('path').join(repoRoot, relativePath)
+                path.join(repoRoot, relativePath)
             ).with({ scheme: 'svn', query: prevRev });
 
             const rightUri = vscode.Uri.file(
-                require('path').join(repoRoot, relativePath)
+                path.join(repoRoot, relativePath)
             ).with({ scheme: 'svn', query: curRev });
 
             const fileName = relativePath.split('/').pop() || relativePath;
@@ -306,7 +307,7 @@ export function registerCommands(
                     if (!value || value.trim() === '') {
                         return 'Branch name cannot be empty';
                     }
-                    if (/[^a-zA-Z0-9._\-]/.test(value)) {
+                    if (/[^a-zA-Z0-9._-]/.test(value)) {
                         return 'Branch name can only contain letters, numbers, dots, hyphens, and underscores';
                     }
                     return undefined;
