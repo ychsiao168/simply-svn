@@ -28,8 +28,9 @@ This extension covers the most common SVN workflows. Only the standard trunk/bra
 
 ## Installation
 
-1. Install from VS Code Marketplace (coming soon)
-2. Or install from `.vsix` file
+1. Download the latest `.vsix` from [GitHub Releases](https://github.com/ychsiao168/simply-svn/releases)
+2. In VS Code, open the Command Palette (`Ctrl+Shift+P`) and run **Extensions: Install from VSIX...**
+3. Select the downloaded `.vsix` file
 
 ## Usage
 
