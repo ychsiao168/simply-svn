@@ -123,7 +123,7 @@ export class Svn {
      * Delete 檔案
      */
     async delete(paths: string[], cwd: string): Promise<SvnExecResult> {
-        return this.exec(['delete', ...paths], cwd);
+        return this.exec(['delete', '--force', ...paths], cwd);
     }
 
     /**

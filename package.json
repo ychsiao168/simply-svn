@@ -119,7 +119,7 @@
         {
           "command": "simplySvn.delete",
           "group": "1_modification",
-          "when": "scmProvider == svn"
+          "when": "scmProvider == svn && scmResourceGroup == changes"
         }
       ]
     },
