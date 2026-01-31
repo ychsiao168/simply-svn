@@ -1,6 +1,6 @@
 import * as cp from 'child_process';
 import * as vscode from 'vscode';
-import { SvnStatusParser, SvnInfoParser, StatusEntry, SvnInfo } from './parser';
+import { SvnStatusParser, SvnInfoParser, SvnBlameParser, StatusEntry, SvnInfo, BlameEntry } from './parser';
 
 export interface SvnExecResult {
     exitCode: number;
@@ -165,6 +165,17 @@ export class Svn {
     async diff(path: string, cwd: string): Promise<string> {
         const result = await this.exec(['diff', path], cwd);
         return result.stdout;
+    }
+
+    /**
+     * Blame (annotate) a file
+     */
+    async blame(filePath: string, cwd: string): Promise<BlameEntry[]> {
+        const result = await this.exec(['blame', '--xml', filePath], cwd);
+        if (result.exitCode !== 0) {
+            return [];
+        }
+        return SvnBlameParser.parse(result.stdout);
     }
 
     /**

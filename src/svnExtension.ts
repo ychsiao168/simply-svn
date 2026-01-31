@@ -4,7 +4,7 @@ import { SvnRepository } from './svn/svnRepository';
 import { SvnSourceControl } from './scm/sourceControl';
 import { registerCommands } from './commands';
 import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
-import { SvnStatusBar } from './statusBar';
+import { SvnStatusBar, SvnBlameStatusBar } from './statusBar';
 
 export class SvnExtension implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -58,7 +58,8 @@ export class SvnExtension implements vscode.Disposable {
 
         // Status Bar
         this.statusBar = new SvnStatusBar(this);
-        this.disposables.push(this.statusBar);
+        const blameStatusBar = new SvnBlameStatusBar(this);
+        this.disposables.push(this.statusBar, blameStatusBar);
 
         // 掃描 workspace 中的 SVN repositories
         await this.scanWorkspace();
@@ -132,7 +133,7 @@ export class SvnExtension implements vscode.Disposable {
 
     getRepositoryForFile(filePath: string): SvnRepository | undefined {
         for (const [repoPath, repo] of this.repositories) {
-            if (filePath.startsWith(repoPath)) {
+            if (filePath.toLowerCase().startsWith(repoPath.toLowerCase())) {
                 return repo;
             }
         }

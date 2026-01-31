@@ -156,6 +156,54 @@ export class SvnLogParser {
     }
 }
 
+/**
+ * SVN Blame Entry (per line)
+ */
+export interface BlameEntry {
+    lineNumber: number;
+    revision: number;
+    author: string;
+    date: string;
+}
+
+/**
+ * Parse svn blame --xml output
+ */
+export class SvnBlameParser {
+    static parse(xml: string): BlameEntry[] {
+        const entries: BlameEntry[] = [];
+
+        try {
+            const result = parser.parse(xml);
+            const target = result?.blame?.target;
+            if (!target) {
+                return entries;
+            }
+
+            let entryList = target.entry;
+            if (!entryList) {
+                return entries;
+            }
+            if (!Array.isArray(entryList)) {
+                entryList = [entryList];
+            }
+
+            for (const entry of entryList) {
+                entries.push({
+                    lineNumber: parseInt(entry['@_line-number'] || '0', 10),
+                    revision: parseInt(entry.commit?.['@_revision'] || '0', 10),
+                    author: entry.commit?.author || '',
+                    date: entry.commit?.date || '',
+                });
+            }
+        } catch (error) {
+            console.error('Failed to parse SVN blame XML:', error);
+        }
+
+        return entries;
+    }
+}
+
 export class SvnInfoParser {
     static parse(xml: string): SvnInfo | undefined {
         try {

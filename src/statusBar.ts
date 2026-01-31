@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { SvnExtension } from './svnExtension';
+import { BlameEntry } from './svn/parser';
 
 /**
  * Extract branch name from SVN URL using standard trunk/branches/tags layout.
@@ -61,6 +63,89 @@ export class SvnStatusBar implements vscode.Disposable {
             ? `$(source-control) SVN: ${branch} r${info.revision}`
             : `$(source-control) SVN r${info.revision}`;
         this.statusBarItem.tooltip = `${info.url}\nRevision: ${info.revision}`;
+        this.statusBarItem.show();
+    }
+
+    dispose(): void {
+        this.disposables.forEach(d => d.dispose());
+    }
+}
+
+export class SvnBlameStatusBar implements vscode.Disposable {
+    private statusBarItem: vscode.StatusBarItem;
+    private disposables: vscode.Disposable[] = [];
+    private blameCache: Map<string, BlameEntry[]> = new Map();
+
+    constructor(private readonly extension: SvnExtension) {
+        this.statusBarItem = vscode.window.createStatusBarItem(
+            vscode.StatusBarAlignment.Right,
+            100
+        );
+        this.statusBarItem.name = 'SVN Blame';
+
+        this.disposables.push(
+            this.statusBarItem,
+            vscode.window.onDidChangeActiveTextEditor(() => {
+                this.blameCache.clear();
+                this.update();
+            }),
+            vscode.window.onDidChangeTextEditorSelection(e => {
+                if (e.textEditor === vscode.window.activeTextEditor) {
+                    this.update();
+                }
+            }),
+            vscode.workspace.onDidSaveTextDocument(() => {
+                this.blameCache.clear();
+                this.update();
+            }),
+        );
+
+        this.update();
+    }
+
+    async update(): Promise<void> {
+        const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            this.statusBarItem.hide();
+            return;
+        }
+
+        const uri = editor.document.uri;
+        if (uri.scheme !== 'file') {
+            this.statusBarItem.hide();
+            return;
+        }
+
+        const repo = this.extension.getRepositoryForFile(uri.fsPath);
+        if (!repo) {
+            this.statusBarItem.hide();
+            return;
+        }
+
+        const fsPath = uri.fsPath;
+        let entries = this.blameCache.get(fsPath);
+        if (!entries) {
+            const relativePath = path.relative(repo.root, fsPath);
+            entries = await repo.getBlame(relativePath);
+            if (entries.length === 0) {
+                this.statusBarItem.hide();
+                return;
+            }
+            this.blameCache.set(fsPath, entries);
+        }
+
+        const line = editor.selection.active.line + 1; // 1-based
+        const entry = entries.find(e => e.lineNumber === line && e.revision > 0);
+        if (!entry) {
+            this.statusBarItem.hide();
+            return;
+        }
+
+        this.statusBarItem.text = `$(git-commit) ${entry.author}, r${entry.revision}`;
+
+        const d = new Date(entry.date);
+        const localDate = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+        this.statusBarItem.tooltip = `r${entry.revision} by ${entry.author}\n${localDate}`;
         this.statusBarItem.show();
     }
 
