@@ -23,7 +23,7 @@
     "version control"
   ],
   "activationEvents": [
-    "workspaceContains:**/.svn"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
