@@ -123,6 +123,15 @@
         }
       ]
     },
+    "views": {
+      "scm": [
+        {
+          "id": "simplySvn.log",
+          "name": "SVN Log",
+          "when": "simplySvn.hasRepository"
+        }
+      ]
+    },
     "configuration": {
       "title": "Simply SVN",
       "properties": {

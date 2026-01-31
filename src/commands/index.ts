@@ -176,6 +176,48 @@ export function registerCommands(
             await vscode.commands.executeCommand('vscode.diff', baseUri, uri, title);
         })
     );
+
+    // Diff Revision (from SVN Log)
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.diffRevision', async (repoRoot: string, svnPath: string, revision: number) => {
+            const repo = extension.getActiveRepository();
+            if (!repo) {
+                return;
+            }
+
+            // SVN log paths are repo-relative (e.g., /trunk/file.txt or /file.txt)
+            // For simple repos without trunk, strip the leading slash
+            const info = await repo.getInfo();
+            let relativePath = svnPath;
+            if (info) {
+                const repoUrl = info.url;
+                const rootUrl = info.repositoryRoot;
+                const wcSubpath = repoUrl.replace(rootUrl, '');
+                if (wcSubpath && relativePath.startsWith(wcSubpath)) {
+                    relativePath = relativePath.substring(wcSubpath.length);
+                }
+            }
+            if (relativePath.startsWith('/')) {
+                relativePath = relativePath.substring(1);
+            }
+
+            const prevRev = (revision - 1).toString();
+            const curRev = revision.toString();
+
+            const leftUri = vscode.Uri.file(
+                require('path').join(repoRoot, relativePath)
+            ).with({ scheme: 'svn', query: prevRev });
+
+            const rightUri = vscode.Uri.file(
+                require('path').join(repoRoot, relativePath)
+            ).with({ scheme: 'svn', query: curRev });
+
+            const fileName = relativePath.split('/').pop() || relativePath;
+            const title = `${fileName} (r${prevRev} → r${curRev})`;
+
+            await vscode.commands.executeCommand('vscode.diff', leftUri, rightUri, title);
+        })
+    );
 }
 
 /**

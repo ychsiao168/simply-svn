@@ -3,6 +3,7 @@ import { Svn } from './svn/svn';
 import { SvnRepository } from './svn/svnRepository';
 import { SvnSourceControl } from './scm/sourceControl';
 import { registerCommands } from './commands';
+import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
 
 export class SvnExtension implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -43,6 +44,19 @@ export class SvnExtension implements vscode.Disposable {
         // 掃描 workspace 中的 SVN repositories
         await this.scanWorkspace();
 
+        // Register SVN Log TreeView
+        const logTreeProvider = new SvnLogTreeProvider(this);
+        const logTreeView = vscode.window.createTreeView('simplySvn.log', {
+            treeDataProvider: logTreeProvider,
+        });
+        const logDecorationProvider = new SvnLogDecorationProvider();
+        this.disposables.push(
+            logTreeView,
+            logTreeProvider,
+            vscode.window.registerFileDecorationProvider(logDecorationProvider),
+            logDecorationProvider
+        );
+
         // 監聽 workspace 變化
         this.disposables.push(
             vscode.workspace.onDidChangeWorkspaceFolders(() => this.scanWorkspace())
@@ -71,6 +85,7 @@ export class SvnExtension implements vscode.Disposable {
         }
 
         this.outputChannel.appendLine(`Found SVN repository: ${path}`);
+        vscode.commands.executeCommand('setContext', 'simplySvn.hasRepository', true);
 
         const repository = new SvnRepository(this.svn, path, this.outputChannel);
         this.repositories.set(path, repository);
@@ -106,6 +121,15 @@ export class SvnExtension implements vscode.Disposable {
         }
 
         return this.repositories.values().next().value;
+    }
+
+    getRepositoryForFile(filePath: string): SvnRepository | undefined {
+        for (const [repoPath, repo] of this.repositories) {
+            if (filePath.startsWith(repoPath)) {
+                return repo;
+            }
+        }
+        return undefined;
     }
 
     getSourceControl(path: string): SvnSourceControl | undefined {

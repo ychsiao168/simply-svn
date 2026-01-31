@@ -22,7 +22,7 @@ export class SvnContentProvider implements vscode.TextDocumentContentProvider {
         );
 
         try {
-            const content = await this.repository.getBaseContent(relativePath);
+            const content = await this.repository.getContentAtRevision(relativePath, revision);
             return content || '';
         } catch (error) {
             console.error(`Failed to get content for ${uri.fsPath}:`, error);

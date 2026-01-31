@@ -96,6 +96,66 @@ export class SvnStatusParser {
 /**
  * 解析 svn info --xml 輸出
  */
+/**
+ * SVN Log Entry
+ */
+export interface LogChangedPath {
+    path: string;
+    action: 'A' | 'D' | 'M' | 'R';
+}
+
+export interface LogEntry {
+    revision: number;
+    author: string;
+    date: string;
+    message: string;
+    paths: LogChangedPath[];
+}
+
+/**
+ * Parse svn log --xml output
+ */
+export class SvnLogParser {
+    static parse(xml: string): LogEntry[] {
+        const entries: LogEntry[] = [];
+
+        try {
+            const result = parser.parse(xml);
+            let logEntries = result?.log?.logentry;
+            if (!logEntries) {
+                return entries;
+            }
+
+            if (!Array.isArray(logEntries)) {
+                logEntries = [logEntries];
+            }
+
+            for (const entry of logEntries) {
+                let pathList = entry.paths?.path;
+                if (pathList && !Array.isArray(pathList)) {
+                    pathList = [pathList];
+                }
+                const paths: LogChangedPath[] = (pathList || []).map((p: any) => ({
+                    path: typeof p === 'string' ? p : p['#text'] || '',
+                    action: typeof p === 'string' ? 'M' : (p['@_action'] || 'M'),
+                }));
+
+                entries.push({
+                    revision: parseInt(entry['@_revision'] || '0', 10),
+                    author: entry.author || '',
+                    date: entry.date || '',
+                    message: entry.msg || '',
+                    paths,
+                });
+            }
+        } catch (error) {
+            console.error('Failed to parse SVN log XML:', error);
+        }
+
+        return entries;
+    }
+}
+
 export class SvnInfoParser {
     static parse(xml: string): SvnInfo | undefined {
         try {

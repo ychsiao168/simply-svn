@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Svn } from './svn';
-import { StatusEntry, SvnInfo } from './parser';
+import { LogEntry, StatusEntry, SvnInfo, SvnLogParser } from './parser';
 
 export class SvnRepository implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -90,11 +90,23 @@ export class SvnRepository implements vscode.Disposable {
         return this.svn.cat(relativePath, 'BASE', this.root);
     }
 
+    async getContentAtRevision(relativePath: string, revision: string): Promise<string | undefined> {
+        return this.svn.cat(relativePath, revision, this.root);
+    }
+
     /**
      * 取得 diff
      */
     async diff(path: string): Promise<string> {
         return this.svn.diff(path, this.root);
+    }
+
+    async getLog(filePath?: string, limit?: number): Promise<LogEntry[]> {
+        const result = await this.svn.log(this.root, filePath, limit);
+        if (result.exitCode !== 0) {
+            return [];
+        }
+        return SvnLogParser.parse(result.stdout);
     }
 
     dispose(): void {
