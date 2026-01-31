@@ -6,13 +6,18 @@ Simply SVN brings native-feeling Subversion support to VS Code, with a familiar 
 
 ## Scope
 
-This extension focuses on **everyday SVN operations** — the commands you use 90% of the time. It is not a full-featured SVN client and intentionally keeps a small feature set for simplicity and maintainability.
+This extension covers the most common SVN workflows. Only the standard trunk/branches/tags repository layout is supported for branch operations.
 
 ## Features
 
-- 📁 **Source Control View** - See all your changes in the familiar SCM sidebar
-- 🔄 **Quick Diff** - Gutter indicators showing what's changed
-- ✅ **Core Operations** - Add, commit, revert, update, delete
+- **Source Control View** - See all your changes in the familiar SCM sidebar
+- **Quick Diff** - Gutter indicators showing what's changed
+- **Core Operations** - Add, commit, revert, update, delete
+- **SVN Log** - Browse commit history with expandable entries and per-file diffs
+- **Blame** - Status bar shows author and revision for the current line
+- **Branch Operations** - Switch and create branches (standard trunk/branches/tags layout)
+- **Conflict Resolution** - Accept theirs, accept mine, or mark as resolved
+- **Status Bar** - Shows current branch and revision
 
 ## Requirements
 
@@ -50,11 +55,17 @@ This extension focuses on **everyday SVN operations** — the commands you use 9
 | Command | Description |
 |---------|-------------|
 | `SVN: Refresh` | Refresh the status |
-| `SVN: Commit` | Commit staged changes |
+| `SVN: Commit` | Commit changes |
 | `SVN: Update` | Update working copy |
 | `SVN: Add` | Add file to version control |
 | `SVN: Revert` | Revert local changes |
 | `SVN: Delete` | Delete file from version control |
+| `SVN: Switch Branch` | Switch to a different branch |
+| `SVN: Create Branch` | Create a new branch |
+| `SVN: Accept Theirs` | Resolve conflict using theirs |
+| `SVN: Accept Mine` | Resolve conflict using mine |
+| `SVN: Mark Resolved` | Mark conflict as resolved |
+| `SVN: Refresh Log` | Refresh the SVN Log view |
 
 ## Development
 

@@ -20,24 +20,27 @@
 ```
 simply-svn/
 ├── src/
-│   ├── extension.ts        # VSCode extension entry point
-│   ├── svnExtension.ts     # Main extension class, manages repositories
+│   ├── extension.ts         # VSCode extension entry point
+│   ├── svnExtension.ts      # Main extension class, manages repositories
+│   ├── statusBar.ts         # Status bar (branch/revision) and blame display
 │   ├── svn/
-│   │   ├── svn.ts          # SVN CLI wrapper (core)
-│   │   ├── parser.ts       # XML output parser
+│   │   ├── svn.ts           # SVN CLI wrapper (core)
+│   │   ├── parser.ts        # XML output parsers (status, info, log, blame)
 │   │   ├── svnRepository.ts # Repository abstraction layer
 │   │   └── index.ts
 │   ├── scm/
 │   │   ├── sourceControl.ts # VSCode SCM Provider implementation
 │   │   ├── contentProvider.ts # Quick Diff content provider
 │   │   └── index.ts
+│   ├── views/
+│   │   └── logTreeProvider.ts # SVN Log TreeView in SCM sidebar
 │   └── commands/
-│       └── index.ts        # Command registration and handling
-├── package.json            # Extension manifest, commands, settings
+│       └── index.ts         # Command registration and handling
+├── package.json             # Extension manifest, commands, settings
 ├── tsconfig.json
 └── .vscode/
-    ├── launch.json         # F5 debug launch config
-    └── tasks.json          # Build tasks
+    ├── launch.json          # F5 debug launch config
+    └── tasks.json           # Build tasks
 ```
 
 ## Common Commands
@@ -71,20 +74,33 @@ npm run package
 ### `src/svn/svn.ts`
 SVN CLI wrapper — all SVN operations go through here:
 - `exec()` - Execute arbitrary svn commands
-- `status()` - Get working copy status
-- `commit()` - Commit changes
-- `update()` - Update working copy
+- `status()`, `info()`, `log()` - Query operations
+- `commit()`, `update()`, `add()`, `revert()`, `delete()` - Working copy operations
+- `switch()`, `copy()`, `resolve()` - Branch and conflict operations
+- `blame()`, `cat()`, `diff()`, `ls()` - Content and history operations
 
 ### `src/svn/parser.ts`
 Parses SVN XML output using `fast-xml-parser`:
 - `SvnStatusParser` - Parses `svn status --xml`
 - `SvnInfoParser` - Parses `svn info --xml`
+- `SvnLogParser` - Parses `svn log --xml`
+- `SvnBlameParser` - Parses `svn blame --xml`
 
 ### `src/scm/sourceControl.ts`
 VSCode Source Control API integration:
 - Creates the SCM Provider
 - Manages resource groups (Changes, Unversioned, Conflicts)
 - Implements Quick Diff
+
+### `src/views/logTreeProvider.ts`
+SVN Log TreeView in the SCM sidebar:
+- Expandable commit entries showing changed files
+- Click to diff any file at any revision
+
+### `src/statusBar.ts`
+Status bar integration:
+- Left: branch name and revision (click to switch branch)
+- Right: blame info for current line (author, revision, date)
 
 ### `package.json`
 Defines the extension's:
@@ -95,7 +111,7 @@ Defines the extension's:
 
 ## Scope
 
-This extension intentionally focuses on core, everyday SVN operations only: status, add, commit, revert, update, delete, and log history. Features beyond this scope (branching, blame, conflict resolution, etc.) are out of scope to keep the codebase simple and maintainable.
+This extension covers the most common SVN workflows: status, add, commit, revert, update, delete, log history, blame, branch operations (switch/create), and conflict resolution. Only standard trunk/branches/tags repository layout is supported.
 
 ## References
 

@@ -94,7 +94,6 @@ export class SvnStatusParser {
 }
 
 /**
-/**
  * SVN Log Entry
  */
 export interface LogChangedPath {
