@@ -37,7 +37,7 @@ export class SvnStatusBar implements vscode.Disposable {
             100
         );
         this.statusBarItem.name = 'Simply SVN';
-        this.statusBarItem.command = 'simplySvn.showInfo';
+        this.statusBarItem.command = 'simplySvn.switchBranch';
 
         this.disposables.push(
             this.statusBarItem,

@@ -219,6 +219,127 @@ export function registerCommands(
         })
     );
 
+    // Switch Branch
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.switchBranch', async () => {
+            const repo = extension.getActiveRepository();
+            if (!repo) {
+                vscode.window.showWarningMessage('No SVN repository found');
+                return;
+            }
+
+            const info = await repo.getInfo();
+            if (!info) {
+                vscode.window.showWarningMessage('Failed to get SVN info');
+                return;
+            }
+
+            const branches = await repo.listBranches();
+
+            type BranchQuickPickItem = vscode.QuickPickItem & { url?: string };
+            const items: BranchQuickPickItem[] = [];
+
+            // Add trunk
+            items.push({
+                label: 'trunk',
+                description: `${info.repositoryRoot}/trunk`,
+                url: `${info.repositoryRoot}/trunk`,
+            });
+
+            // Add branches
+            for (const branch of branches) {
+                items.push({
+                    label: branch,
+                    description: `${info.repositoryRoot}/branches/${branch}`,
+                    url: `${info.repositoryRoot}/branches/${branch}`,
+                });
+            }
+
+            // Separator + create new branch
+            items.push({ label: '', kind: vscode.QuickPickItemKind.Separator });
+            items.push({
+                label: '$(add) Create new branch...',
+            });
+
+            const selected = await vscode.window.showQuickPick(items, {
+                title: 'Switch Branch',
+                placeHolder: 'Select a branch to switch to',
+            });
+
+            if (!selected) {
+                return;
+            }
+
+            if (!selected.url) {
+                // Create new branch
+                await vscode.commands.executeCommand('simplySvn.createBranch');
+                return;
+            }
+
+            // Check if already on this branch
+            if (info.url === selected.url) {
+                vscode.window.showInformationMessage(`Already on ${selected.label}`);
+                return;
+            }
+
+            const success = await repo.switchBranch(selected.url);
+            if (success) {
+                await extension.refreshAll();
+            }
+        })
+    );
+
+    // Create Branch
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.createBranch', async () => {
+            const repo = extension.getActiveRepository();
+            if (!repo) {
+                vscode.window.showWarningMessage('No SVN repository found');
+                return;
+            }
+
+            const branchName = await vscode.window.showInputBox({
+                title: 'Create Branch',
+                prompt: 'Enter the new branch name',
+                placeHolder: 'feature-xxx',
+                validateInput: (value) => {
+                    if (!value || value.trim() === '') {
+                        return 'Branch name cannot be empty';
+                    }
+                    if (/[^a-zA-Z0-9._\-]/.test(value)) {
+                        return 'Branch name can only contain letters, numbers, dots, hyphens, and underscores';
+                    }
+                    return undefined;
+                },
+            });
+
+            if (!branchName) {
+                return;
+            }
+
+            const success = await repo.createBranch(branchName);
+            if (!success) {
+                return;
+            }
+
+            // Ask if user wants to switch to the new branch
+            const switchTo = await vscode.window.showInformationMessage(
+                `Branch "${branchName}" created. Switch to it?`,
+                'Switch',
+                'Stay'
+            );
+
+            if (switchTo === 'Switch') {
+                const info = await repo.getInfo();
+                if (info) {
+                    const url = `${info.repositoryRoot}/branches/${branchName}`;
+                    await repo.switchBranch(url);
+                    await extension.refreshAll();
+                }
+            }
+        })
+    );
+
     // Show SVN Info
     context.subscriptions.push(
         vscode.commands.registerCommand('simplySvn.showInfo', async () => {

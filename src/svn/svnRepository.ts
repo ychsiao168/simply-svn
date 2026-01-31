@@ -105,6 +105,51 @@ export class SvnRepository implements vscode.Disposable {
         return this.svn.blame(relativePath, this.root);
     }
 
+    /**
+     * List branches from the standard layout (repoRoot/branches/).
+     * Returns branch names, or empty array if not using standard layout.
+     */
+    async listBranches(): Promise<string[]> {
+        const info = await this.getInfo();
+        if (!info) {
+            return [];
+        }
+        return this.svn.ls(`${info.repositoryRoot}/branches`);
+    }
+
+    /**
+     * Switch working copy to a different branch URL.
+     */
+    async switchBranch(url: string): Promise<boolean> {
+        const result = await this.svn.switch(url, this.root);
+        if (result.exitCode === 0) {
+            vscode.window.showInformationMessage(`SVN: Switched to ${url}`);
+            return true;
+        } else {
+            vscode.window.showErrorMessage(`SVN Switch failed: ${result.stderr}`);
+            return false;
+        }
+    }
+
+    /**
+     * Create a branch via server-side copy from current URL.
+     */
+    async createBranch(branchName: string): Promise<boolean> {
+        const info = await this.getInfo();
+        if (!info) {
+            return false;
+        }
+        const destUrl = `${info.repositoryRoot}/branches/${branchName}`;
+        const result = await this.svn.copy(info.url, destUrl, `Create branch ${branchName}`);
+        if (result.exitCode === 0) {
+            vscode.window.showInformationMessage(`SVN: Created branch ${branchName}`);
+            return true;
+        } else {
+            vscode.window.showErrorMessage(`SVN Create branch failed: ${result.stderr}`);
+            return false;
+        }
+    }
+
     async getLog(filePath?: string, limit?: number): Promise<LogEntry[]> {
         const result = await this.svn.log(this.root, filePath, limit);
         if (result.exitCode !== 0) {

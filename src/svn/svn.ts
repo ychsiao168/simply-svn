@@ -179,6 +179,33 @@ export class Svn {
     }
 
     /**
+     * List directory contents on the server
+     */
+    async ls(url: string): Promise<string[]> {
+        const result = await this.exec(['ls', url]);
+        if (result.exitCode !== 0) {
+            return [];
+        }
+        return result.stdout.split('\n')
+            .map(line => line.trim().replace(/\/$/, ''))
+            .filter(Boolean);
+    }
+
+    /**
+     * Switch working copy to a different branch URL
+     */
+    async switch(url: string, cwd: string): Promise<SvnExecResult> {
+        return this.exec(['switch', url], cwd);
+    }
+
+    /**
+     * Create a branch/tag via server-side copy
+     */
+    async copy(srcUrl: string, destUrl: string, message: string): Promise<SvnExecResult> {
+        return this.exec(['copy', srcUrl, destUrl, '-m', message]);
+    }
+
+    /**
      * Log
      */
     async log(cwd: string, filePath?: string, limit: number = 50): Promise<SvnExecResult> {

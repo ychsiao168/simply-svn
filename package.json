@@ -75,6 +75,18 @@
         "title": "Open Changes",
         "category": "SVN",
         "icon": "$(diff)"
+      },
+      {
+        "command": "simplySvn.switchBranch",
+        "title": "Switch Branch",
+        "category": "SVN",
+        "icon": "$(git-branch)"
+      },
+      {
+        "command": "simplySvn.createBranch",
+        "title": "Create Branch",
+        "category": "SVN",
+        "icon": "$(add)"
       }
     ],
     "menus": {
