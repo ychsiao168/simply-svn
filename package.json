@@ -9,6 +9,7 @@
     "type": "git",
     "url": "https://github.com/your-username/simply-svn"
   },
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -151,8 +152,18 @@
         },
         {
           "command": "simplySvn.add",
+          "group": "inline",
+          "when": "scmProvider == svn && scmResourceGroup == unversioned"
+        },
+        {
+          "command": "simplySvn.add",
           "group": "1_modification",
           "when": "scmProvider == svn && scmResourceGroup == unversioned"
+        },
+        {
+          "command": "simplySvn.revert",
+          "group": "inline",
+          "when": "scmProvider == svn && scmResourceGroup == changes"
         },
         {
           "command": "simplySvn.revert",
@@ -186,6 +197,7 @@
         {
           "id": "simplySvn.log",
           "name": "SVN Log",
+          "icon": "$(history)",
           "when": "simplySvn.hasRepository"
         }
       ]
@@ -217,10 +229,11 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package:ext",
+    "vscode:prepublish": "npm run generate-icon && npm run package:ext",
     "compile": "tsc -p ./",
     "watch": "node esbuild.js --watch",
     "package:ext": "node esbuild.js --production",
+    "generate-icon": "npx sharp-cli -i icon.svg -o icon.png -- resize 128 128",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",

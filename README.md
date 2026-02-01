@@ -35,12 +35,12 @@ This extension covers the most common SVN workflows. Only the standard trunk/bra
 ## Usage
 
 1. Open a folder containing an SVN working copy
-2. The SVN icon will appear in the Source Control sidebar
+2. SVN changes will appear in the Source Control sidebar
 3. Use the familiar Git-like workflow:
    - View changes in the sidebar
-   - Stage files by clicking `+`
-   - Enter commit message and click ✓
-   - Pull updates with the cloud icon
+   - Click `+` to add files
+   - Enter a commit message and click ✓ to commit
+   - Use the refresh button to update from the repository
 
 ## Extension Settings
 
