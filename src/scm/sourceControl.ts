@@ -70,6 +70,8 @@ export class SvnSourceControl implements vscode.Disposable {
     private conflictsGroup: vscode.SourceControlResourceGroup;
     private contentProvider: SvnContentProvider;
     private refreshTimeout: NodeJS.Timeout | undefined;
+    private noHistoryFiles = new Set<string>();
+    private statusReady = false;
 
     constructor(
         private readonly repository: SvnRepository,
@@ -100,7 +102,7 @@ export class SvnSourceControl implements vscode.Disposable {
         this.conflictsGroup.hideWhenEmpty = true;
 
         // Content Provider for Quick Diff
-        this.contentProvider = new SvnContentProvider(repository);
+        this.contentProvider = new SvnContentProvider(repository, (fsPath) => this.noHistoryFiles.has(fsPath.toLowerCase()));
         this.disposables.push(
             vscode.workspace.registerTextDocumentContentProvider('svn', this.contentProvider)
         );
@@ -140,7 +142,7 @@ export class SvnSourceControl implements vscode.Disposable {
      * QuickDiffProvider implementation
      */
     provideOriginalResource(uri: vscode.Uri): vscode.Uri | undefined {
-        if (uri.scheme !== 'file') {
+        if (uri.scheme !== 'file' || !this.statusReady || this.noHistoryFiles.has(uri.fsPath.toLowerCase())) {
             return undefined;
         }
         // Return svn: scheme URI for contentProvider to handle
@@ -159,11 +161,16 @@ export class SvnSourceControl implements vscode.Disposable {
         }
     }
 
+    hasNoHistory(fsPath: string): boolean {
+        return this.noHistoryFiles.has(fsPath.toLowerCase());
+    }
+
     private updateResourceGroups(statuses: StatusEntry[]): void {
         const changes: vscode.SourceControlResourceState[] = [];
         const unversioned: vscode.SourceControlResourceState[] = [];
         const conflicts: vscode.SourceControlResourceState[] = [];
         const decorationEntries: { uri: vscode.Uri; status: SvnFileStatus }[] = [];
+        const newNoHistory = new Set<string>();
 
         for (const entry of statuses) {
             const uri = vscode.Uri.file(path.join(this.repository.root, entry.path));
@@ -175,9 +182,12 @@ export class SvnSourceControl implements vscode.Disposable {
                     conflicts.push(resourceState);
                     break;
                 case 'unversioned':
+                    newNoHistory.add(uri.fsPath.toLowerCase());
                     unversioned.push(resourceState);
                     break;
                 case 'added':
+                    newNoHistory.add(uri.fsPath.toLowerCase());
+                // falls through
                 case 'deleted':
                 case 'modified':
                 case 'replaced':
@@ -186,6 +196,9 @@ export class SvnSourceControl implements vscode.Disposable {
                     break;
             }
         }
+
+        this.noHistoryFiles = newNoHistory;
+        this.statusReady = true;
 
         this.changesGroup.resourceStates = changes;
         this.unversionedGroup.resourceStates = unversioned;
@@ -199,14 +212,15 @@ export class SvnSourceControl implements vscode.Disposable {
         entry: StatusEntry
     ): vscode.SourceControlResourceState {
         const decorations = this.getDecorations(entry.status);
+        const isUnversioned = entry.status === 'unversioned';
 
         return {
             resourceUri: uri,
             decorations,
             command: {
-                command: 'simplySvn.openChange',
-                title: 'Open Changes',
-                arguments: [uri],
+                command: isUnversioned ? 'simplySvn.openFile' : 'simplySvn.openChange',
+                title: isUnversioned ? 'Open File' : 'Open Changes',
+                arguments: isUnversioned ? [{ resourceUri: uri }] : [uri],
             },
         };
     }

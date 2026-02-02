@@ -75,6 +75,7 @@ export class SvnBlameStatusBar implements vscode.Disposable {
     private statusBarItem: vscode.StatusBarItem;
     private disposables: vscode.Disposable[] = [];
     private blameCache: Map<string, BlameEntry[]> = new Map();
+    private updateId = 0;
 
     constructor(private readonly extension: SvnExtension) {
         this.statusBarItem = vscode.window.createStatusBarItem(
@@ -104,6 +105,8 @@ export class SvnBlameStatusBar implements vscode.Disposable {
     }
 
     async update(): Promise<void> {
+        const currentId = ++this.updateId;
+
         const editor = vscode.window.activeTextEditor;
         if (!editor) {
             this.statusBarItem.hide();
@@ -122,11 +125,19 @@ export class SvnBlameStatusBar implements vscode.Disposable {
             return;
         }
 
+        if (this.extension.fileHasNoHistory(uri.fsPath)) {
+            this.statusBarItem.hide();
+            return;
+        }
+
         const fsPath = uri.fsPath;
         let entries = this.blameCache.get(fsPath);
         if (!entries) {
             const relativePath = path.relative(repo.root, fsPath);
             entries = await repo.getBlame(relativePath);
+            if (this.updateId !== currentId) {
+                return;
+            }
             if (entries.length === 0) {
                 this.statusBarItem.hide();
                 return;

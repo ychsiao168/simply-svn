@@ -12,6 +12,7 @@ export class SvnExtension implements vscode.Disposable {
     private repositories: Map<string, SvnRepository> = new Map();
     private sourceControls: Map<string, SvnSourceControl> = new Map();
     private statusBar: SvnStatusBar | undefined;
+    private blameStatusBar: SvnBlameStatusBar | undefined;
     private logTreeProvider: SvnLogTreeProvider | undefined;
     private scmDecorationProvider: SvnScmDecorationProvider | undefined;
 
@@ -49,8 +50,8 @@ export class SvnExtension implements vscode.Disposable {
 
         // Status Bar
         this.statusBar = new SvnStatusBar(this);
-        const blameStatusBar = new SvnBlameStatusBar(this);
-        this.disposables.push(this.statusBar, blameStatusBar);
+        this.blameStatusBar = new SvnBlameStatusBar(this);
+        this.disposables.push(this.statusBar, this.blameStatusBar);
 
         // Watch for workspace folder changes
         this.disposables.push(
@@ -134,6 +135,7 @@ export class SvnExtension implements vscode.Disposable {
         // Initial refresh
         await sourceControl.refresh();
         await this.statusBar?.update();
+        await this.blameStatusBar?.update();
     }
 
     get svnInstance(): Svn | undefined {
@@ -167,6 +169,15 @@ export class SvnExtension implements vscode.Disposable {
             }
         }
         return undefined;
+    }
+
+    fileHasNoHistory(fsPath: string): boolean {
+        for (const [, sc] of this.sourceControls) {
+            if (sc.hasNoHistory(fsPath)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     getSourceControl(path: string): SvnSourceControl | undefined {

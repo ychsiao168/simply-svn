@@ -9,12 +9,19 @@ export class SvnContentProvider implements vscode.TextDocumentContentProvider {
     private onDidChangeEmitter = new vscode.EventEmitter<vscode.Uri>();
     readonly onDidChange = this.onDidChangeEmitter.event;
 
-    constructor(private readonly repository: SvnRepository) {}
+    constructor(
+        private readonly repository: SvnRepository,
+        private readonly shouldSkip?: (fsPath: string) => boolean
+    ) {}
 
     async provideTextDocumentContent(uri: vscode.Uri): Promise<string> {
+        if (this.shouldSkip?.(uri.fsPath)) {
+            return '';
+        }
+
         // uri.query contains the revision, e.g. "BASE"
         const revision = uri.query || 'BASE';
-        
+
         // Get relative path
         const relativePath = path.relative(
             this.repository.root,
