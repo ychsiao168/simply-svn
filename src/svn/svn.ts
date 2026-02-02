@@ -20,9 +20,10 @@ export class Svn {
     async exec(args: string[], cwd?: string): Promise<SvnExecResult> {
         return new Promise((resolve) => {
             const startTime = Date.now();
+            const fullArgs = ['--non-interactive', ...args];
             this.outputChannel.appendLine(`> svn ${args.join(' ')}`);
 
-            const child = cp.spawn(this.svnPath, args, {
+            const child = cp.spawn(this.svnPath, fullArgs, {
                 cwd,
                 env: process.env,
             });
@@ -44,6 +45,17 @@ export class Svn {
                 
                 if (stderr) {
                     this.outputChannel.appendLine(`  stderr: ${stderr.trim()}`);
+                }
+
+                if (stderr.includes('E215004') || stderr.includes('Authentication failed')) {
+                    vscode.window.showWarningMessage(
+                        'SVN authentication failed. Please run "svn info" in the terminal to cache your credentials.',
+                        'Open Terminal'
+                    ).then(choice => {
+                        if (choice === 'Open Terminal') {
+                            vscode.commands.executeCommand('workbench.action.terminal.new');
+                        }
+                    });
                 }
 
                 resolve({

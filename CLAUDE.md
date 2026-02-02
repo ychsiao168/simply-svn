@@ -123,5 +123,5 @@ This extension covers the most common SVN workflows: status, add, commit, revert
 ## Notes
 
 - Windows uses `\` for paths, but SVN and Node.js `path` module handle this
-- SVN output encoding: set `LC_ALL=C` to ensure English output
+- SVN output encoding: uses system locale (not `LC_ALL=C`) since all output is parsed via `--xml`
 - Avoid running too many svn processes concurrently (causes high CPU)
