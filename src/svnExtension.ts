@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { Svn } from './svn/svn';
 import { SvnRepository } from './svn/svnRepository';
-import { SvnSourceControl } from './scm/sourceControl';
+import { SvnSourceControl, SvnScmDecorationProvider } from './scm/sourceControl';
 import { registerCommands } from './commands';
 import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
 import { SvnStatusBar, SvnBlameStatusBar } from './statusBar';
@@ -13,6 +13,7 @@ export class SvnExtension implements vscode.Disposable {
     private sourceControls: Map<string, SvnSourceControl> = new Map();
     private statusBar: SvnStatusBar | undefined;
     private logTreeProvider: SvnLogTreeProvider | undefined;
+    private scmDecorationProvider: SvnScmDecorationProvider | undefined;
 
     constructor(
         private readonly context: vscode.ExtensionContext,
@@ -36,11 +37,14 @@ export class SvnExtension implements vscode.Disposable {
             treeDataProvider: this.logTreeProvider,
         });
         const logDecorationProvider = new SvnLogDecorationProvider();
+        this.scmDecorationProvider = new SvnScmDecorationProvider();
         this.disposables.push(
             logTreeView,
             this.logTreeProvider,
             vscode.window.registerFileDecorationProvider(logDecorationProvider),
-            logDecorationProvider
+            vscode.window.registerFileDecorationProvider(this.scmDecorationProvider),
+            logDecorationProvider,
+            this.scmDecorationProvider
         );
 
         // Status Bar
@@ -122,7 +126,7 @@ export class SvnExtension implements vscode.Disposable {
         const repository = new SvnRepository(this.svn, path, this.outputChannel);
         this.repositories.set(path, repository);
 
-        const sourceControl = new SvnSourceControl(repository, this.outputChannel);
+        const sourceControl = new SvnSourceControl(repository, this.outputChannel, this.scmDecorationProvider);
         this.sourceControls.set(path, sourceControl);
 
         this.disposables.push(repository, sourceControl);
