@@ -24,7 +24,7 @@ export class Svn {
 
             const child = cp.spawn(this.svnPath, args, {
                 cwd,
-                env: { ...process.env, LC_ALL: 'C' },
+                env: process.env,
             });
 
             let stdout = '';
