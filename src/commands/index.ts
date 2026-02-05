@@ -172,7 +172,9 @@ export function registerCommands(
             }
 
             const baseUri = uri.with({ scheme: 'svn', query: 'BASE' });
-            const title = `${uri.fsPath} (Working vs BASE)`;
+            const repo = extension.getRepositoryForFile(uri.fsPath);
+            const relativePath = repo ? path.relative(repo.root, uri.fsPath) : path.basename(uri.fsPath);
+            const title = `${relativePath} (Working Tree)`;
 
             await vscode.commands.executeCommand('vscode.diff', baseUri, uri, title);
         })
