@@ -248,6 +248,15 @@ export class SvnSourceControl implements vscode.Disposable {
         return this.sourceControl.inputBox;
     }
 
+    /**
+     * Paths of all committable resources (Changes group).
+     * Used to explicitly scope `svn commit` so it doesn't pick up
+     * unrelated scheduled changes (e.g. svn:mergeinfo on the working copy root).
+     */
+    getCommittablePaths(): string[] {
+        return this.changesGroup.resourceStates.map(r => r.resourceUri.fsPath);
+    }
+
     dispose(): void {
         if (this.refreshTimeout) {
             clearTimeout(this.refreshTimeout);

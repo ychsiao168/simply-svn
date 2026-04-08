@@ -31,7 +31,13 @@ export function registerCommands(
                 return;
             }
 
-            const success = await repo.commit(message);
+            const paths = sourceControl?.getCommittablePaths() ?? [];
+            if (paths.length === 0) {
+                vscode.window.showWarningMessage('No changes to commit.');
+                return;
+            }
+
+            const success = await repo.commit(message, paths);
             if (success) {
                 if (sourceControl) {
                     sourceControl.inputBox.value = '';
