@@ -37,14 +37,10 @@ export function registerCommands(
                 return;
             }
 
+            // SvnRepository.commit() reports success/failure to the user.
             const success = await repo.commit(message, paths);
-            if (success) {
-                if (sourceControl) {
-                    sourceControl.inputBox.value = '';
-                }
-                vscode.window.showInformationMessage('Committed successfully.');
-            } else {
-                vscode.window.showErrorMessage('Commit failed. Check the Simply SVN output for details.');
+            if (success && sourceControl) {
+                sourceControl.inputBox.value = '';
             }
             await extension.refreshAll();
         })

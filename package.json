@@ -229,15 +229,14 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run generate-icon && npm run package:ext",
-    "compile": "tsc -p ./",
+    "vscode:prepublish": "npm run compile && npm run generate-icon && npm run package:ext",
+    "compile": "tsc -p ./ --noEmit",
     "watch": "node esbuild.js --watch",
     "package:ext": "node esbuild.js --production",
     "generate-icon": "npx sharp-cli -i icon.svg -o icon.png -- resize 128 128",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "node ./out/test/runTest.js",
     "package": "vsce package"
   },
   "devDependencies": {
