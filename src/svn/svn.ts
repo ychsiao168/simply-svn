@@ -1,6 +1,6 @@
 import * as cp from 'child_process';
 import * as vscode from 'vscode';
-import { SvnStatusParser, SvnInfoParser, SvnBlameParser, StatusEntry, SvnInfo, BlameEntry } from './parser';
+import { SvnStatusParser, SvnInfoParser, SvnBlameParser, SvnPropListParser, StatusEntry, SvnInfo, BlameEntry, SvnProperty } from './parser';
 
 export interface SvnExecResult {
     exitCode: number;
@@ -200,6 +200,17 @@ export class Svn {
             return [];
         }
         return SvnBlameParser.parse(result.stdout);
+    }
+
+    /**
+     * List versioned properties of a file or directory
+     */
+    async proplist(filePath: string, cwd: string): Promise<SvnProperty[]> {
+        const result = await this.exec(['proplist', '--xml', '-v', pegSafe(filePath)], cwd);
+        if (result.exitCode !== 0) {
+            return [];
+        }
+        return SvnPropListParser.parse(result.stdout);
     }
 
     /**

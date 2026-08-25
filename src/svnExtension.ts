@@ -5,6 +5,7 @@ import { SvnSourceControl, SvnScmDecorationProvider } from './scm/sourceControl'
 import { registerCommands } from './commands';
 import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
 import { SvnStatusBar, SvnBlameStatusBar } from './statusBar';
+import { SvnPropertyContentProvider, SVN_PROPS_SCHEME } from './scm/contentProvider';
 
 export class SvnExtension implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -15,6 +16,7 @@ export class SvnExtension implements vscode.Disposable {
     private blameStatusBar: SvnBlameStatusBar | undefined;
     private logTreeProvider: SvnLogTreeProvider | undefined;
     private scmDecorationProvider: SvnScmDecorationProvider | undefined;
+    private propertyContentProvider: SvnPropertyContentProvider | undefined;
 
     constructor(
         private readonly context: vscode.ExtensionContext,
@@ -46,6 +48,18 @@ export class SvnExtension implements vscode.Disposable {
             vscode.window.registerFileDecorationProvider(this.scmDecorationProvider),
             logDecorationProvider,
             this.scmDecorationProvider
+        );
+
+        // Property viewer: one provider for every working copy, since the
+        // command is reachable from the Explorer for any of them.
+        this.propertyContentProvider = new SvnPropertyContentProvider(fsPath =>
+            this.getRepositoryForFile(fsPath)
+        );
+        this.disposables.push(
+            vscode.workspace.registerTextDocumentContentProvider(
+                SVN_PROPS_SCHEME,
+                this.propertyContentProvider
+            )
         );
 
         // Status Bar

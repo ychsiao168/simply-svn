@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { SvnExtension } from '../svnExtension';
+import { SvnPropertyContentProvider } from '../scm/contentProvider';
 
 export function registerCommands(
     context: vscode.ExtensionContext,
@@ -401,6 +402,39 @@ export function registerCommands(
     );
 
     // Show SVN Info
+    context.subscriptions.push(
+        vscode.commands.registerCommand('simplySvn.showProperties', async (resource?: vscode.SourceControlResourceState | vscode.Uri) => {
+            let uri: vscode.Uri | undefined;
+            if (resource instanceof vscode.Uri) {
+                uri = resource;
+            } else if (resource?.resourceUri) {
+                uri = resource.resourceUri;
+            } else {
+                uri = vscode.window.activeTextEditor?.document.uri;
+            }
+
+            if (!uri) {
+                vscode.window.showWarningMessage('No file selected');
+                return;
+            }
+
+            const repo = extension.getRepositoryForFile(uri.fsPath);
+            if (!repo) {
+                vscode.window.showWarningMessage('File is not in an SVN working copy');
+                return;
+            }
+
+            // Opened through a content provider rather than as an untitled
+            // document so the view is read-only and never appears unsaved.
+            const label = path.relative(repo.root, uri.fsPath) || path.basename(repo.root);
+            const doc = await vscode.workspace.openTextDocument(
+                SvnPropertyContentProvider.uriFor(uri.fsPath, label)
+            );
+            await vscode.window.showTextDocument(doc, { preview: true });
+        })
+    );
+
+    // Show Info
     context.subscriptions.push(
         vscode.commands.registerCommand('simplySvn.showInfo', async () => {
             const repo = extension.getActiveRepository();

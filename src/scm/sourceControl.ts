@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { SvnRepository } from '../svn/svnRepository';
-import { StatusEntry, SvnFileStatus } from '../svn/parser';
+import { StatusEntry, SvnFileStatus, SvnPropStatus } from '../svn/parser';
 import { SvnContentProvider } from './contentProvider';
 
 const statusBadges: Record<string, string> = {
@@ -36,18 +36,28 @@ export class SvnScmDecorationProvider implements vscode.FileDecorationProvider, 
         return this.decorations.get(uri.fsPath.toLowerCase());
     }
 
-    update(entries: { uri: vscode.Uri; status: SvnFileStatus }[]): void {
+    update(entries: { uri: vscode.Uri; status: SvnFileStatus; props?: SvnPropStatus }[]): void {
         const oldKeys = new Set(this.decorations.keys());
         this.decorations.clear();
 
         const changedUris: vscode.Uri[] = [];
 
-        for (const { uri, status } of entries) {
+        for (const { uri, status, props } of entries) {
             const key = uri.fsPath.toLowerCase();
             oldKeys.delete(key);
+            // A conflicted property outranks the item status, matching how such an
+            // entry is grouped under Conflicts. Otherwise a property-only change --
+            // status 'normal', which carries no badge of its own -- borrows the
+            // modified badge so it is not rendered blank.
+            let badgeStatus = status;
+            if (props === 'conflicted') {
+                badgeStatus = 'conflicted';
+            } else if (statusBadges[status] === undefined && props === 'modified') {
+                badgeStatus = 'modified';
+            }
             this.decorations.set(key, {
-                badge: statusBadges[status],
-                color: statusColors[status],
+                badge: statusBadges[badgeStatus],
+                color: statusColors[badgeStatus],
                 propagate: false,
             });
             changedUris.push(uri);
@@ -169,30 +179,50 @@ export class SvnSourceControl implements vscode.Disposable {
         const changes: vscode.SourceControlResourceState[] = [];
         const unversioned: vscode.SourceControlResourceState[] = [];
         const conflicts: vscode.SourceControlResourceState[] = [];
-        const decorationEntries: { uri: vscode.Uri; status: SvnFileStatus }[] = [];
+        const decorationEntries: { uri: vscode.Uri; status: SvnFileStatus; props: SvnPropStatus }[] =
+            [];
         const newNoHistory = new Set<string>();
 
         for (const entry of statuses) {
             const uri = vscode.Uri.file(path.join(this.repository.root, entry.path));
             const resourceState = this.createResourceState(uri, entry);
-            decorationEntries.push({ uri, status: entry.status });
+            decorationEntries.push({ uri, status: entry.status, props: entry.props });
+
+            if (entry.status === 'added' || entry.status === 'unversioned') {
+                newNoHistory.add(uri.fsPath.toLowerCase());
+            }
+
+            // A conflicted property is checked ahead of the item status: it can
+            // accompany any status, and letting the status decide would put e.g.
+            // {modified, props conflicted} into Changes, making an unresolved
+            // conflict committable via getCommittablePaths().
+            if (entry.props === 'conflicted') {
+                conflicts.push(resourceState);
+                continue;
+            }
 
             switch (entry.status) {
                 case 'conflicted':
                     conflicts.push(resourceState);
                     break;
                 case 'unversioned':
-                    newNoHistory.add(uri.fsPath.toLowerCase());
                     unversioned.push(resourceState);
                     break;
                 case 'added':
-                    newNoHistory.add(uri.fsPath.toLowerCase());
-                // falls through
                 case 'deleted':
                 case 'modified':
                 case 'replaced':
                 case 'missing':
                     changes.push(resourceState);
+                    break;
+                default:
+                    // A property-only change reports item="normal" with the real
+                    // change in props. Without this the file never reaches a group,
+                    // leaving it invisible in the SCM view and excluded from
+                    // getCommittablePaths().
+                    if (entry.props === 'modified') {
+                        changes.push(resourceState);
+                    }
                     break;
             }
         }
@@ -211,26 +241,65 @@ export class SvnSourceControl implements vscode.Disposable {
         uri: vscode.Uri,
         entry: StatusEntry
     ): vscode.SourceControlResourceState {
-        const decorations = this.getDecorations(entry.status);
-        const isUnversioned = entry.status === 'unversioned';
+        const decorations = this.getDecorations(entry.status, entry.props);
 
         return {
             resourceUri: uri,
             decorations,
-            command: {
-                command: isUnversioned ? 'simplySvn.openFile' : 'simplySvn.openChange',
-                title: isUnversioned ? 'Open File' : 'Open Changes',
-                arguments: isUnversioned ? [{ resourceUri: uri }] : [uri],
-            },
+            command: this.getPrimaryCommand(uri, entry),
         };
     }
 
-    private getDecorations(status: SvnFileStatus): vscode.SourceControlResourceDecorations {
+    /**
+     * The action taken when the resource row is clicked.
+     *
+     * A property-only change has item status 'normal' -- there is no text diff
+     * behind it, and opening one fails outright rather than showing an empty
+     * one. This also covers directories: a directory in the Changes group is
+     * always there for a property change (content changes belong to the files
+     * beneath it), and `svn cat` cannot fetch a directory at all. `svn status`
+     * reports no node kind, so 'normal' is the only signal available.
+     */
+    private getPrimaryCommand(uri: vscode.Uri, entry: StatusEntry): vscode.Command {
+        if (entry.status === 'unversioned') {
+            return {
+                command: 'simplySvn.openFile',
+                title: 'Open File',
+                arguments: [{ resourceUri: uri }],
+            };
+        }
+
+        if (entry.status === 'normal') {
+            return {
+                command: 'simplySvn.showProperties',
+                title: 'Show Properties',
+                arguments: [uri],
+            };
+        }
+
+        return {
+            command: 'simplySvn.openChange',
+            title: 'Open Changes',
+            arguments: [uri],
+        };
+    }
+
+    private getDecorations(
+        status: SvnFileStatus,
+        props: SvnPropStatus = 'none'
+    ): vscode.SourceControlResourceDecorations {
+        const propsSuffix =
+            props === 'conflicted'
+                ? ', properties conflicted'
+                : props === 'modified'
+                  ? ', properties modified'
+                  : '';
+
         switch (status) {
             case 'modified':
-                return { tooltip: 'Modified' };
+                return { tooltip: `Modified${propsSuffix}` };
             case 'added':
-                return { tooltip: 'Added' };
+                return { tooltip: `Added${propsSuffix}` };
             case 'deleted':
                 return { tooltip: 'Deleted', strikeThrough: true };
             case 'conflicted':
@@ -240,7 +309,11 @@ export class SvnSourceControl implements vscode.Disposable {
             case 'missing':
                 return { tooltip: 'Missing', strikeThrough: true };
             default:
-                return { tooltip: status };
+                // Reached by property-only changes, whose item status is 'normal'.
+                if (props === 'conflicted') {
+                    return { tooltip: 'Properties conflicted' };
+                }
+                return { tooltip: props === 'modified' ? 'Properties modified' : status };
         }
     }
 

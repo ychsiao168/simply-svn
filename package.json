@@ -112,6 +112,12 @@
         "title": "Refresh Log",
         "category": "SVN",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "simplySvn.showProperties",
+        "title": "Show Properties",
+        "category": "SVN",
+        "icon": "$(symbol-property)"
       }
     ],
     "menus": {
@@ -189,6 +195,18 @@
           "command": "simplySvn.resolveWorking",
           "group": "1_modification",
           "when": "scmProvider == svn && scmResourceGroup == conflicts"
+        },
+        {
+          "command": "simplySvn.showProperties",
+          "group": "2_view",
+          "when": "scmProvider == svn && scmResourceGroup != unversioned"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "simplySvn.showProperties",
+          "group": "7_svn",
+          "when": "resourceScheme == file"
         }
       ]
     },

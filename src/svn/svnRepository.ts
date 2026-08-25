@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Svn } from './svn';
-import { BlameEntry, LogEntry, StatusEntry, SvnInfo, SvnLogParser } from './parser';
+import { BlameEntry, LogEntry, StatusEntry, SvnInfo, SvnLogParser, SvnProperty } from './parser';
 
 export class SvnRepository implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -103,6 +103,10 @@ export class SvnRepository implements vscode.Disposable {
 
     async getBlame(relativePath: string): Promise<BlameEntry[]> {
         return this.svn.blame(relativePath, this.root);
+    }
+
+    async getProperties(relativePath: string): Promise<SvnProperty[]> {
+        return this.svn.proplist(relativePath, this.root);
     }
 
     /**

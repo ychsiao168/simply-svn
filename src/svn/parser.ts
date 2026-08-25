@@ -45,6 +45,17 @@ const parser = new XMLParser({
 });
 
 /**
+ * Property values are whitespace-significant -- svn:ignore and svn:externals
+ * are newline-separated lists whose trailing newline is part of the stored
+ * value -- so they must not go through the shared parser's value trimming.
+ */
+const rawValueParser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: '@_',
+    trimValues: false,
+});
+
+/**
  * Parse svn status --xml output
  */
 export class SvnStatusParser {
@@ -198,6 +209,56 @@ export class SvnBlameParser {
         }
 
         return entries;
+    }
+}
+
+/**
+ * A single versioned property.
+ */
+export interface SvnProperty {
+    name: string;
+    value: string;
+}
+
+/**
+ * Parse svn proplist --xml -v output
+ */
+export class SvnPropListParser {
+    static parse(xml: string): SvnProperty[] {
+        const properties: SvnProperty[] = [];
+
+        try {
+            const result = rawValueParser.parse(xml);
+            const target = result?.properties?.target;
+            if (!target) {
+                return properties;
+            }
+
+            let propList = target.property;
+            if (!propList) {
+                return properties;
+            }
+            if (!Array.isArray(propList)) {
+                propList = [propList];
+            }
+
+            for (const prop of propList) {
+                // A property with an empty value parses to '', and svn:executable
+                // to the bare string '*', so the element is not always an object.
+                const value =
+                    typeof prop === 'string' || typeof prop === 'number'
+                        ? String(prop)
+                        : String(prop?.['#text'] ?? '');
+                properties.push({
+                    name: typeof prop === 'object' ? prop['@_name'] || '' : '',
+                    value,
+                });
+            }
+        } catch (error) {
+            console.error('Failed to parse SVN proplist XML:', error);
+        }
+
+        return properties;
     }
 }
 
