@@ -42,7 +42,9 @@ Diffs are built by taking a `file:` URI and doing `uri.with({scheme: 'svn', quer
 
 `svn cat` fails on `unversioned` and `added` files (no BASE to fetch). `SvnSourceControl` tracks these in `noHistoryFiles` and gates three things: `provideOriginalResource` returns `undefined`, the content provider short-circuits via its `shouldSkip` callback, and the blame status bar hides. `statusReady` additionally suppresses Quick Diff until the first status completes — before that, every file would look history-less.
 
-`noHistoryFiles` keys are **lowercased `fsPath`** (Windows case-insensitivity). `getRepositoryForFile` also compares lowercased. Look up with the same casing or the guard silently misses.
+`noHistoryFiles` keys are **lowercased `fsPath`** (Windows case-insensitivity). Look up with the same casing or the guard silently misses.
+
+`getRepositoryForFile` does *not* follow that rule: it case-folds only on Windows, since `/work/Repo` and `/work/repo` are usually distinct directories elsewhere and folding would let each claim the other's files. `process.platform` is only an approximation of case sensitivity — see the comment on `pathsAreCaseInsensitive` for which edges it gets wrong and why that is accepted. It also matches on path-segment boundaries (a bare prefix test attributed `/work/repo-other` to `/work/repo`) and, for nested working copies, returns the deepest containing root.
 
 ### Commit is explicitly scoped to the Changes group
 
@@ -62,7 +64,9 @@ Blame uses an `updateId` counter to drop stale async responses: increment on ent
 
 `SvnRepository` shows the user-facing `showInformationMessage`/`showErrorMessage` for commit, update, switch, and createBranch, returning `boolean`. `Svn` stays UI-free apart from the auth warning. **Commands must not add their own toast** for these operations — the repository layer already reported it, and doing so double-notifies (this was the bug in `simplySvn.commit`). Commands only handle what the repository layer can't know about, e.g. clearing the input box.
 
-Two known rough edges: `getSelectedResources()` in `commands/index.ts` is a stub returning only the active editor's file, so SCM multi-select doesn't work for add/revert/delete when invoked without an explicit resource argument. And `createBranch()`/`listBranches()` return early when their preliminary `getInfo()` fails — `createBranch` does so with no toast at all, so the command appears to do nothing.
+One known rough edge: `getSelectedResources()` in `commands/index.ts` is a stub returning only the active editor's file, so SCM multi-select doesn't work for add/revert/delete when invoked without an explicit resource argument.
+
+`listBranches()` takes the repository root as a parameter rather than calling `getInfo()` itself. Its caller has already fetched and reported on that info; a second lookup could fail silently after the first succeeded, leaving a trunk-only picker with nothing to indicate why.
 
 ## Conventions
 

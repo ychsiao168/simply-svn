@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import * as path from 'path';
 import { Svn } from './svn/svn';
 import { SvnRepository } from './svn/svnRepository';
 import { SvnSourceControl, SvnScmDecorationProvider } from './scm/sourceControl';
@@ -6,6 +7,45 @@ import { registerCommands } from './commands';
 import { SvnLogTreeProvider, SvnLogDecorationProvider } from './views/logTreeProvider';
 import { SvnStatusBar, SvnBlameStatusBar } from './statusBar';
 import { SvnPropertyContentProvider, SVN_PROPS_SCHEME } from './scm/contentProvider';
+
+/**
+ * Platform approximation of filesystem case sensitivity. Folding everywhere
+ * would make /work/Repo and /work/repo -- distinct directories on Linux --
+ * claim each other's files.
+ *
+ * Only the platform is consulted, so this is wrong at the edges in both
+ * directions: macOS defaults to case-insensitive but APFS and HFS+ can be
+ * formatted otherwise, and a Windows host can reach case-sensitive storage
+ * over a UNC share, \\wsl$, or a directory with case sensitivity enabled.
+ * Getting those right needs per-volume probing. The cost of being wrong is
+ * bounded -- a missed match, or a conflated one only among roots whose paths
+ * differ solely by case -- so the approximation is deliberate.
+ */
+const pathsAreCaseInsensitive = process.platform === 'win32';
+
+function normalizePath(p: string): string {
+    const resolved = path.resolve(p);
+    return pathsAreCaseInsensitive ? resolved.toLowerCase() : resolved;
+}
+
+/**
+ * Whether `filePath` is `root` itself or sits beneath it.
+ *
+ * A plain prefix test matches partial path segments, so a file in
+ * `/work/repo-other` would be attributed to a working copy at `/work/repo`.
+ */
+function isWithin(root: string, filePath: string): boolean {
+    const normalizedRoot = normalizePath(root);
+    const normalizedFile = normalizePath(filePath);
+
+    if (normalizedFile === normalizedRoot) {
+        return true;
+    }
+    const withSeparator = normalizedRoot.endsWith(path.sep)
+        ? normalizedRoot
+        : normalizedRoot + path.sep;
+    return normalizedFile.startsWith(withSeparator);
+}
 
 export class SvnExtension implements vscode.Disposable {
     private disposables: vscode.Disposable[] = [];
@@ -166,23 +206,31 @@ export class SvnExtension implements vscode.Disposable {
             return this.repositories.values().next().value;
         }
 
-        const filePath = editor.document.uri.fsPath;
-        for (const [repoPath, repo] of this.repositories) {
-            if (filePath.startsWith(repoPath)) {
-                return repo;
-            }
-        }
-
-        return this.repositories.values().next().value;
+        return (
+            this.getRepositoryForFile(editor.document.uri.fsPath) ??
+            this.repositories.values().next().value
+        );
     }
 
     getRepositoryForFile(filePath: string): SvnRepository | undefined {
+        let best: SvnRepository | undefined;
+        let bestLength = -1;
+
         for (const [repoPath, repo] of this.repositories) {
-            if (filePath.toLowerCase().startsWith(repoPath.toLowerCase())) {
-                return repo;
+            if (!isWithin(repoPath, filePath)) {
+                continue;
+            }
+            // Nested working copies: the deepest root that contains the file is
+            // the one that owns it. Measured after normalization so depth
+            // reflects the resolved path, not however the root was spelled.
+            const depth = normalizePath(repoPath).length;
+            if (depth > bestLength) {
+                best = repo;
+                bestLength = depth;
             }
         }
-        return undefined;
+
+        return best;
     }
 
     fileHasNoHistory(fsPath: string): boolean {

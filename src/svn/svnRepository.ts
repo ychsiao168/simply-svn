@@ -112,13 +112,13 @@ export class SvnRepository implements vscode.Disposable {
     /**
      * List branches from the standard layout (repoRoot/branches/).
      * Returns branch names, or empty array if not using standard layout.
+     *
+     * Takes the repository root rather than fetching it: the caller already has
+     * it from the getInfo() it reports failures for, and a second lookup here
+     * could fail silently after that one succeeded.
      */
-    async listBranches(): Promise<string[]> {
-        const info = await this.getInfo();
-        if (!info) {
-            return [];
-        }
-        return this.svn.ls(`${info.repositoryRoot}/branches`);
+    async listBranches(repositoryRoot: string): Promise<string[]> {
+        return this.svn.ls(`${repositoryRoot}/branches`);
     }
 
     /**
@@ -141,6 +141,11 @@ export class SvnRepository implements vscode.Disposable {
     async createBranch(branchName: string): Promise<boolean> {
         const info = await this.getInfo();
         if (!info) {
+            // Without this the command returns having shown nothing at all:
+            // getInfo() swallows the reason, so no other layer can report it.
+            vscode.window.showErrorMessage(
+                'SVN Create branch failed: could not read repository info'
+            );
             return false;
         }
         const destUrl = `${info.repositoryRoot}/branches/${branchName}`;

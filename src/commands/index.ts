@@ -240,7 +240,7 @@ export function registerCommands(
                 return;
             }
 
-            const branches = await repo.listBranches();
+            const branches = await repo.listBranches(info.repositoryRoot);
 
             type BranchQuickPickItem = vscode.QuickPickItem & { url?: string };
             const items: BranchQuickPickItem[] = [];
