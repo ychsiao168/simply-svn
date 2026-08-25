@@ -8,6 +8,18 @@ export interface SvnExecResult {
     stderr: string;
 }
 
+/**
+ * Append a trailing '@' to a target that contains one, so SVN does not read the
+ * last '@' as a peg revision separator. Without this, `usb-mount@.service` is
+ * parsed as path `usb-mount` at peg revision `.service`.
+ *
+ * Applies to both working-copy paths and URLs; must NOT be applied to
+ * non-target arguments (commit messages, revisions, --accept values).
+ */
+function pegSafe(target: string): string {
+    return target.includes('@') ? `${target}@` : target;
+}
+
 export class Svn {
     constructor(
         private readonly svnPath: string,
@@ -121,21 +133,21 @@ export class Svn {
      * Add files
      */
     async add(paths: string[], cwd: string): Promise<SvnExecResult> {
-        return this.exec(['add', ...paths], cwd);
+        return this.exec(['add', ...paths.map(pegSafe)], cwd);
     }
 
     /**
      * Revert files
      */
     async revert(paths: string[], cwd: string): Promise<SvnExecResult> {
-        return this.exec(['revert', ...paths], cwd);
+        return this.exec(['revert', ...paths.map(pegSafe)], cwd);
     }
 
     /**
      * Delete files
      */
     async delete(paths: string[], cwd: string): Promise<SvnExecResult> {
-        return this.exec(['delete', '--force', ...paths], cwd);
+        return this.exec(['delete', '--force', ...paths.map(pegSafe)], cwd);
     }
 
     /**
@@ -144,7 +156,7 @@ export class Svn {
     async commit(message: string, paths: string[], cwd: string): Promise<SvnExecResult> {
         const args = ['commit', '-m', message];
         if (paths.length > 0) {
-            args.push(...paths);
+            args.push(...paths.map(pegSafe));
         }
         return this.exec(args, cwd);
     }
@@ -164,7 +176,7 @@ export class Svn {
      * Get file content at a specific revision
      */
     async cat(filePath: string, revision: string, cwd: string): Promise<string | undefined> {
-        const result = await this.exec(['cat', '-r', revision, filePath], cwd);
+        const result = await this.exec(['cat', '-r', revision, pegSafe(filePath)], cwd);
         if (result.exitCode === 0) {
             return result.stdout;
         }
@@ -175,7 +187,7 @@ export class Svn {
      * Diff
      */
     async diff(path: string, cwd: string): Promise<string> {
-        const result = await this.exec(['diff', path], cwd);
+        const result = await this.exec(['diff', pegSafe(path)], cwd);
         return result.stdout;
     }
 
@@ -183,7 +195,7 @@ export class Svn {
      * Blame (annotate) a file
      */
     async blame(filePath: string, cwd: string): Promise<BlameEntry[]> {
-        const result = await this.exec(['blame', '--xml', filePath], cwd);
+        const result = await this.exec(['blame', '--xml', pegSafe(filePath)], cwd);
         if (result.exitCode !== 0) {
             return [];
         }
@@ -194,7 +206,7 @@ export class Svn {
      * List directory contents on the server
      */
     async ls(url: string): Promise<string[]> {
-        const result = await this.exec(['ls', url]);
+        const result = await this.exec(['ls', pegSafe(url)]);
         if (result.exitCode !== 0) {
             return [];
         }
@@ -207,21 +219,21 @@ export class Svn {
      * Switch working copy to a different branch URL
      */
     async switch(url: string, cwd: string): Promise<SvnExecResult> {
-        return this.exec(['switch', url], cwd);
+        return this.exec(['switch', pegSafe(url)], cwd);
     }
 
     /**
      * Create a branch/tag via server-side copy
      */
     async copy(srcUrl: string, destUrl: string, message: string): Promise<SvnExecResult> {
-        return this.exec(['copy', srcUrl, destUrl, '-m', message]);
+        return this.exec(['copy', pegSafe(srcUrl), pegSafe(destUrl), '-m', message]);
     }
 
     /**
      * Resolve a conflicted file
      */
     async resolve(filePath: string, accept: 'working' | 'mine-full' | 'theirs-full', cwd: string): Promise<SvnExecResult> {
-        return this.exec(['resolve', '--accept', accept, filePath], cwd);
+        return this.exec(['resolve', '--accept', accept, pegSafe(filePath)], cwd);
     }
 
     /**
@@ -230,7 +242,7 @@ export class Svn {
     async log(cwd: string, filePath?: string, limit: number = 50): Promise<SvnExecResult> {
         const args = ['log', '--xml', '-v', '-r', 'HEAD:1', '-l', limit.toString()];
         if (filePath) {
-            args.push(filePath);
+            args.push(pegSafe(filePath));
         }
         return this.exec(args, cwd);
     }
